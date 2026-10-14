@@ -8,3 +8,8 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Training data and per-epoch checkpoints (best_model.pth is kept)
+data/
+checkpoints/model_epoch_*.pth
+test_images/
