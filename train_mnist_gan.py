@@ -39,7 +39,7 @@ train_dataset = datasets.MNIST(
     root="data", train=True, download=True, transform=transform
 )
 train_loader = DataLoader(
-    train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=2
+    train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=0
 )
 
 # ---------------------------------------------------------------------------

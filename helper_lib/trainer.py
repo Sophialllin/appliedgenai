@@ -71,3 +71,33 @@ def train_model(model, train_loader, val_loader, criterion, optimizer,
     model.load_state_dict(best["model_state_dict"])
     print(f"Best validation accuracy: {best['accuracy']:.2f}% (epoch {best['epoch']})")
     return model
+
+import torch.nn as nn
+def train_gan(model, data_loader, criterion, optimizer, device="cpu", epochs=10):
+    import torch.nn as nn
+    generator = model.generator.to(device)
+    discriminator = model.discriminator.to(device)
+    opt_g = optimizer["G"]
+    opt_d = optimizer["D"]
+    for epoch in range(1, epochs + 1):
+        progress = tqdm(data_loader, ncols=110, desc=f"GAN Epoch {epoch}/{epochs}")
+        for real_images, _ in progress:
+            batch_size = real_images.size(0)
+            real_images = real_images.to(device)
+            real_labels = torch.ones(batch_size, 1, device=device)
+            fake_labels = torch.zeros(batch_size, 1, device=device)
+
+            opt_d.zero_grad()
+            loss_d_real = criterion(discriminator(real_images), real_labels)
+            z = torch.randn(batch_size, model.latent_dim, device=device)
+            fake_images = generator(z)
+            loss_d_fake = criterion(discriminator(fake_images.detach()), fake_labels)
+            loss_d = loss_d_real + loss_d_fake
+            loss_d.backward()
+            opt_d.step()
+
+            opt_g.zero_grad()
+            loss_g = criterion(discriminator(fake_images), real_labels)
+            loss_g.backward()
+            opt_g.step()
+    return model

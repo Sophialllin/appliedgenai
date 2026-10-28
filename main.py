@@ -9,6 +9,7 @@ from PIL import Image
 
 from helper_lib.model import get_model
 from helper_lib.data_loader import get_transform, CIFAR10_CLASSES
+from routers.gan import router as gan_router
 
 app = FastAPI()
 nlp = spacy.load("en_core_web_lg")
@@ -56,3 +57,6 @@ async def predict_cifar(file: UploadFile):
         "class": CIFAR10_CLASSES[predicted.item()],
         "confidence": round(confidence.item(), 4),
     }
+
+
+app.include_router(gan_router)
