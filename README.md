@@ -12,6 +12,18 @@ FastAPI service with a spaCy word-embedding endpoint and a CIFAR-10 image classi
 ```bash
 uv sync
 ```
+##  GAN Image Generation
+
+A GAN trained on MNIST to generate handwritten digit images.
+
+### Train the model
+```bash
+python train_mnist_gan.py
+```
+Saves weights to `trained_models/gan_mnist.pth`. Runs for 20 epochs on CPU or GPU.
+
+### Endpoint
+- `GET /gan/generate?num_samples=9` — returns a PNG image grid of GAN-generated MNIST digits (1–64 samples)
 
 ## Train the CIFAR-10 classifier
 
