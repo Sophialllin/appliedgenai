@@ -25,7 +25,8 @@ RUN uv sync --frozen --no-install-project
 # Copy the application code
 COPY main.py /code/
 COPY helper_lib /code/helper_lib
-COPY checkpoints /code/checkpoints
+COPY routers /code/routers
+COPY trained_models /code/trained_models
 
 # Command to run the application
 CMD ["uv", "run", "fastapi", "run", "main.py", "--port", "80"]
