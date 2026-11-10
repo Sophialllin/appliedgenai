@@ -101,3 +101,70 @@ def train_gan(model, data_loader, criterion, optimizer, device="cpu", epochs=10)
             loss_g.backward()
             opt_g.step()
     return model
+
+
+# -----------------------------------------------------------------------
+# Diffusion training
+# -----------------------------------------------------------------------
+
+def train_diffusion(model, data_loader, criterion, optimizer,
+                    device="cpu", epochs=10):
+    model.to(device).train()
+    for epoch in range(1, epochs + 1):
+        for x0, _ in data_loader:
+            x0 = x0.to(device)
+            B  = x0.size(0)
+            t  = torch.randint(0, model.T, (B,), device=device)
+            noise = torch.randn_like(x0)
+            x_t   = model.q_sample(x0, t, noise)
+            noise_pred = model(x_t, t)
+            loss = criterion(noise_pred, noise)
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+    return model
+
+
+# -----------------------------------------------------------------------
+# Langevin helper (updates INPUT image x, NOT model weights)
+# -----------------------------------------------------------------------
+
+def _langevin_sample(model, x_init, n_steps=60, step_size=10.0,
+                     noise_scale=0.005, clamp=(-1.0, 1.0)):
+    x = x_init.clone()
+    x.requires_grad_(True)          
+    for _ in range(n_steps):
+        if x.grad is not None:
+            x.grad.zero_()
+        energy = model(x).sum()
+        energy.backward()
+        with torch.no_grad():
+            x -= (step_size / 2) * x.grad
+            x += noise_scale * torch.randn_like(x)
+            x.clamp_(*clamp)
+        x = x.detach().requires_grad_(True)   # break graph, keep grad enabled
+    return x.detach()
+
+
+# -----------------------------------------------------------------------
+# EBM training (Contrastive Divergence)
+# -----------------------------------------------------------------------
+
+def train_ebm(model, data_loader, criterion, optimizer,
+              device="cpu", epochs=10,
+              langevin_steps=60, step_size=10.0, noise_scale=0.005):
+    model.to(device).train()
+    for epoch in range(1, epochs + 1):
+        for x_real, _ in data_loader:
+            x_real    = x_real.to(device)
+            x_neg_init = torch.rand_like(x_real) * 2 - 1
+            x_neg     = _langevin_sample(model, x_neg_init,
+                                         langevin_steps, step_size, noise_scale)
+            e_real = model(x_real)
+            e_neg  = model(x_neg.detach())
+            loss   = e_real.mean() - e_neg.mean()   # CD loss
+            optimizer.zero_grad()
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+            optimizer.step()
+    return model
