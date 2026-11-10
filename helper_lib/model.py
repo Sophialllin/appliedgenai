@@ -174,42 +174,41 @@ class UNet(nn.Module):
         self.time_emb = SinusoidalTimeEmbedding(time_dim)
 
         # Encoder
-        self.enc_in = ConvBlock(img_channels, ch,   time_dim)   # (B, ch,   32, 32)
+        self.enc_in = ConvBlock(img_channels, ch,   time_dim)   
         self.down1  = nn.Conv2d(ch,   ch*2, 3, stride=2, padding=1)
-        self.enc1   = ConvBlock(ch*2, ch*2, time_dim)           # (B, ch*2, 16, 16)
+        self.enc1   = ConvBlock(ch*2, ch*2, time_dim)           
         self.down2  = nn.Conv2d(ch*2, ch*4, 3, stride=2, padding=1)
-        self.enc2   = ConvBlock(ch*4, ch*4, time_dim)           # (B, ch*4,  8,  8)
+        self.enc2   = ConvBlock(ch*4, ch*4, time_dim)          
         self.down3  = nn.Conv2d(ch*4, ch*8, 3, stride=2, padding=1)
-        self.enc3   = ConvBlock(ch*8, ch*8, time_dim)           # (B, ch*8,  4,  4)
+        self.enc3   = ConvBlock(ch*8, ch*8, time_dim)          
 
         # Bottleneck
         self.bottleneck = ConvBlock(ch*8, ch*8, time_dim)
 
-        # Decoder — skip connection 来自上一层encoder，所以 channel 是不对称的
+        
         self.up3  = nn.Upsample(scale_factor=2, mode="bilinear", align_corners=False)
-        self.dec3 = ConvBlock(ch*8 + ch*4, ch*4, time_dim)   # cat(up3(h), e2)
+        self.dec3 = ConvBlock(ch*8 + ch*4, ch*4, time_dim)   
         self.up2  = nn.Upsample(scale_factor=2, mode="bilinear", align_corners=False)
-        self.dec2 = ConvBlock(ch*4 + ch*2, ch*2, time_dim)   # cat(up2(h), e1)
+        self.dec2 = ConvBlock(ch*4 + ch*2, ch*2, time_dim)   
         self.up1  = nn.Upsample(scale_factor=2, mode="bilinear", align_corners=False)
-        self.dec1 = ConvBlock(ch*2 + ch,   ch,   time_dim)   # cat(up1(h), e0)
+        self.dec1 = ConvBlock(ch*2 + ch,   ch,   time_dim)   
 
         self.out_conv = nn.Conv2d(ch, img_channels, 1)
 
     def forward(self, x, t):
         t_emb = self.time_emb(t)
 
-        e0 = self.enc_in(x, t_emb)                # (B, ch,   32, 32)
-        e1 = self.enc1(self.down1(e0), t_emb)     # (B, ch*2, 16, 16)
-        e2 = self.enc2(self.down2(e1), t_emb)     # (B, ch*4,  8,  8)
-        e3 = self.enc3(self.down3(e2), t_emb)     # (B, ch*8,  4,  4)
+        e0 = self.enc_in(x, t_emb)                
+        e1 = self.enc1(self.down1(e0), t_emb)     
+        e2 = self.enc2(self.down2(e1), t_emb)     
+        e3 = self.enc3(self.down3(e2), t_emb)     
 
-        h = self.bottleneck(e3, t_emb)            # (B, ch*8,  4,  4)
+        h = self.bottleneck(e3, t_emb)            
 
-        h = self.dec3(torch.cat([self.up3(h), e2], dim=1), t_emb)  # 8x8 cat 8x8 ✓
-        h = self.dec2(torch.cat([self.up2(h), e1], dim=1), t_emb)  # 16x16 cat 16x16 ✓
-        h = self.dec1(torch.cat([self.up1(h), e0], dim=1), t_emb)  # 32x32 cat 32x32 ✓
+        h = self.dec3(torch.cat([self.up3(h), e2], dim=1), t_emb)  
+        h = self.dec2(torch.cat([self.up2(h), e1], dim=1), t_emb)  
+        h = self.dec1(torch.cat([self.up1(h), e0], dim=1), t_emb)  
         return self.out_conv(h)
-
 
 class DiffusionModel(nn.Module):
     """

@@ -27,6 +27,7 @@ COPY main.py /code/
 COPY helper_lib /code/helper_lib
 COPY routers /code/routers
 COPY trained_models /code/trained_models
+COPY checkpoints /code/checkpoints
 
 # Command to run the application
 CMD ["uv", "run", "fastapi", "run", "main.py", "--port", "80"]
