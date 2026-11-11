@@ -60,3 +60,9 @@ async def predict_cifar(file: UploadFile):
 
 
 app.include_router(gan_router)
+
+from routers.diffusion import router as diffusion_router
+from routers.ebm import router as ebm_router
+
+app.include_router(diffusion_router)
+app.include_router(ebm_router)
